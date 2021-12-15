@@ -535,7 +535,7 @@ func TestEth_State_GetStorageAt(t *testing.T) {
 		initialStorage map[types.Address]map[types.Hash]types.Hash
 		address        types.Address
 		index          types.Hash
-		blockNumber    string
+		blockNumber    interface{}
 		succeeded      bool
 		expectedData   *argBytes
 	}{
@@ -587,7 +587,7 @@ func TestEth_State_GetStorageAt(t *testing.T) {
 			},
 			address:      addr0,
 			index:        hash2,
-			blockNumber:  "100",
+			blockNumber:  "0x64",
 			succeeded:    false,
 			expectedData: nil,
 		},
@@ -600,7 +600,7 @@ func TestEth_State_GetStorageAt(t *testing.T) {
 			},
 			address:      addr0,
 			index:        hash2,
-			blockNumber:  "",
+			blockNumber:  nil,
 			succeeded:    true,
 			expectedData: argBytesPtr(types.ZeroHash[:]),
 		},
@@ -619,8 +619,8 @@ func TestEth_State_GetStorageAt(t *testing.T) {
 				}
 			}
 			dispatcher := newTestDispatcher(hclog.NewNullLogger(), store)
-			blockNumber, _ := createBlockNumberPointer(tt.blockNumber)
-			res, err := dispatcher.endpoints.Eth.GetStorageAt(tt.address, tt.index, blockNumber)
+			// blockNumber, _ := createBlockNumberPointer(tt.blockNumber)
+			res, err := dispatcher.endpoints.Eth.GetStorageAt(tt.address, tt.index, tt.blockNumber)
 			if tt.succeeded {
 				assert.NoError(t, err)
 				assert.NotNil(t, res)
