@@ -691,6 +691,9 @@ func (t *TxPool) extractTransactions(evnt *blockchain.Event) map[types.Address]*
 
 // ProcessEvent processes the blockchain event and updates the txpool accordingly
 func (t *TxPool) ProcessEvent(evnt *blockchain.Event) {
+	t.logger.Debug("ENTERING PROCESS EVENT")
+	defer t.logger.Debug("EXITING PROCESS EVENT")
+
 	// Extract and group the transactions from the new block event
 	eventWrapperMap := t.extractTransactions(evnt)
 
