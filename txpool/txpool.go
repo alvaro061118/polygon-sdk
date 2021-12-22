@@ -581,6 +581,8 @@ func (t *TxPool) promotedTxnCleanup(
 	stateNonce uint64, // The valid nonce (reference for pruning)
 	cleanupCallback func(txn *types.Transaction), // Additional cleanup logic
 ) {
+	t.logger.Debug("ENTERING PROCESS EVENT")
+	defer t.logger.Debug("EXITING PROCESS EVENT")
 	// Prune out all the now possibly low-nonce transactions in the promoted queue
 	t.pendingQueue.lock.Lock()
 
@@ -700,6 +702,8 @@ func (t *TxPool) ProcessEvent(evnt *blockchain.Event) {
 	// txDropCleanup is a helper method for updating the gauge size,
 	// as well as removing leftover remote txns
 	txnDropCleanup := func(txn *types.Transaction) {
+		t.logger.Debug("ENTERING CALLBACK")
+		defer t.logger.Debug("EXITING CALLBACK")
 		// Decrease the slots taken up by this txn
 		t.gauge.decrease(slotsRequired(txn))
 
@@ -882,7 +886,7 @@ func (t *TxPool) processSlots(tx *types.Transaction, isLocal bool) error {
 	// try to allocate space
 	overflow := t.gauge.height + txSlots - t.gauge.limit
 	dropped, success := t.Discard(overflow, isLocal)
-	if !success {
+	if !isLocal && !success {
 		return ErrTxPoolOverflow
 	}
 
