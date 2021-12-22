@@ -435,6 +435,8 @@ func (t *TxPool) addImpl(origin TxOrigin, tx *types.Transaction) error {
 	// Add the transaction to the lookup map
 	t.addTxToLookup(tx)
 
+	t.logger.Debug(fmt.Sprintf("GAUGE HEIGHT: %d", t.gauge.getHeight()))
+
 	return nil
 }
 
@@ -877,7 +879,7 @@ func (t *TxPool) processSlots(tx *types.Transaction, isLocal bool) error {
 	// try to allocate space
 	overflow := t.gauge.height + txSlots - t.gauge.limit
 	dropped, success := t.Discard(overflow, isLocal)
-	if !isLocal && !success {
+	if !success {
 		return ErrTxPoolOverflow
 	}
 
