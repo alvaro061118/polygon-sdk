@@ -581,8 +581,8 @@ func (t *TxPool) promotedTxnCleanup(
 	stateNonce uint64, // The valid nonce (reference for pruning)
 	cleanupCallback func(txn *types.Transaction), // Additional cleanup logic
 ) {
-	t.logger.Debug("ENTERING PROCESS EVENT")
-	defer t.logger.Debug("EXITING PROCESS EVENT")
+	t.logger.Debug("ENTERING PROMOTED")
+	defer t.logger.Debug("EXITING PROMOTED")
 	// Prune out all the now possibly low-nonce transactions in the promoted queue
 	t.pendingQueue.lock.Lock()
 
@@ -705,13 +705,16 @@ func (t *TxPool) ProcessEvent(evnt *blockchain.Event) {
 		t.logger.Debug("ENTERING CALLBACK")
 		defer t.logger.Debug("EXITING CALLBACK")
 		// Decrease the slots taken up by this txn
+		t.logger.Debug("BEFORE decrease")
 		t.gauge.decrease(slotsRequired(txn))
 
 		// Remove the txn from the remote txn queue,
 		// if it's present
+		t.logger.Debug("BEFORE Delete")
 		t.remoteTxns.Delete(txn)
 
 		// Remove the txn from the lookup map
+		t.logger.Debug("BEFORE deleteTxFromLookup")
 		t.deleteTxFromLookup(txn.Hash)
 	}
 
