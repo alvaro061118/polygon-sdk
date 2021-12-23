@@ -70,6 +70,7 @@ func TestDiscovery_PeerAdded(t *testing.T) {
 		srvs[0], srvs[1],
 		srvs[1], srvs[2],
 	)
+	// wait until gossip protocol build mesh network (https://github.com/libp2p/specs/blob/master/pubsub/gossipsub/gossipsub-v1.0.md)
 	time.Sleep(time.Second * 2)
 
 	// wait until server0 connects to server2
