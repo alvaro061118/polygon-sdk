@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -20,12 +19,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var initialPort = uint64(2000)
-
 func CreateServer(t *testing.T, callback func(c *Config)) *Server {
 	// create the server
 	cfg := DefaultConfig()
-	cfg.Addr.Port = int(atomic.AddUint64(&initialPort, 1))
+	cfg.Addr.Port = 0 // Wildcard value -> Next free port
 	cfg.Chain = &chain.Chain{
 		Params: &chain.Params{
 			ChainID: 1,
@@ -91,7 +88,7 @@ func MultiJoin(t *testing.T, srvs ...*Server) {
 
 func getTestConfig(callback func(c *Config)) *Config {
 	cfg := DefaultConfig()
-	cfg.Addr.Port = int(atomic.AddUint64(&initialPort, 1))
+	cfg.Addr.Port = 0
 	cfg.Chain = &chain.Chain{
 		Params: &chain.Params{
 			ChainID: 1,
