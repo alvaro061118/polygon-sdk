@@ -45,6 +45,7 @@ func TestGossip(t *testing.T) {
 	}
 
 	MultiJoin(t, srvs[0], srvs[1])
+	time.Sleep(time.Second * 2)
 
 	topicName := "topic/0.1"
 

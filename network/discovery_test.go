@@ -41,7 +41,7 @@ func TestDiscovery_ProtocolFindPeers(t *testing.T) {
 	}
 
 	MultiJoin(t, srvs[0], srvs[1])
-	time.Sleep(1 * time.Second)
+	time.Sleep(time.Second * 2)
 
 	// find peers should not include our identity
 	resp, err := srvs[0].discovery.findPeersCall(srvs[1].AddrInfo().ID)
@@ -70,6 +70,7 @@ func TestDiscovery_PeerAdded(t *testing.T) {
 		srvs[0], srvs[1],
 		srvs[1], srvs[2],
 	)
+	time.Sleep(time.Second * 2)
 
 	// wait until server0 connects to server2
 	assert.True(t, <-connectedCh)
