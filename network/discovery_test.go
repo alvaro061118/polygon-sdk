@@ -9,6 +9,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func waitForNetworkMesh() {
+	// wait until gossip protocol build mesh network (https://github.com/libp2p/specs/blob/master/pubsub/gossipsub/gossipsub-v1.0.md)
+	time.Sleep(time.Second * 2)
+}
+
 func discoveryConfig(c *Config) {
 	// we limit maxPeers=1 to limit the number of connections
 	// since we only want to test discovery
@@ -21,7 +26,7 @@ func TestDiscovery_ConnectedPopulatesRoutingTable(t *testing.T) {
 	srv1 := CreateServer(t, nil)
 
 	MultiJoin(t, srv0, srv1)
-	time.Sleep(1 * time.Second)
+	waitForNetworkMesh()
 
 	assert.Equal(t, srv0.discovery.routingTable.Size(), 1)
 	assert.Equal(t, srv1.discovery.routingTable.Size(), 1)
@@ -41,7 +46,7 @@ func TestDiscovery_ProtocolFindPeers(t *testing.T) {
 	}
 
 	MultiJoin(t, srvs[0], srvs[1])
-	time.Sleep(time.Second * 2)
+	waitForNetworkMesh()
 
 	// find peers should not include our identity
 	resp, err := srvs[0].discovery.findPeersCall(srvs[1].AddrInfo().ID)
@@ -65,13 +70,13 @@ func TestDiscovery_PeerAdded(t *testing.T) {
 	// server0 should connect to server2 by discovery
 	connectedCh := asyncWaitForEvent(srvs[0], 15*time.Second, connectedPeerHandler(srvs[2].AddrInfo().ID))
 
-	// serial join, srv0 -> srv1 -> srv2
+	// srv0 -> srv1
+	// srv1 -> srv2
 	MultiJoin(t,
 		srvs[0], srvs[1],
 		srvs[1], srvs[2],
 	)
-	// wait until gossip protocol build mesh network (https://github.com/libp2p/specs/blob/master/pubsub/gossipsub/gossipsub-v1.0.md)
-	time.Sleep(time.Second * 2)
+	waitForNetworkMesh()
 
 	// wait until server0 connects to server2
 	assert.True(t, <-connectedCh)

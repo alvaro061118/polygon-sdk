@@ -227,7 +227,11 @@ func (s *Server) Start() error {
 		s.discovery.setup(bootnodes)
 	}
 
-	go s.runJoinWatcher()
+	go func() {
+		if err := s.runJoinWatcher(); err != nil {
+			s.logger.Error(fmt.Sprintf("Unable to run join watcher service, %v", err))
+		}
+	}()
 
 	// watch for disconnected peers
 	s.host.Network().Notify(&network.NotifyBundle{
@@ -478,6 +482,7 @@ func (s *Server) runJoinWatcher() error {
 		switch evnt.Type {
 		// only concerned about PeerConnected, PeerFailedToConnect, and PeerAlreadyConnected
 		case PeerConnected, PeerFailedToConnect, PeerAlreadyConnected:
+			s.logger.Debug("PEER EVENT")
 		default:
 			return
 		}
