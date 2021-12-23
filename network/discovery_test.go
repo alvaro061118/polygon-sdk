@@ -2,6 +2,7 @@ package network
 
 import (
 	"fmt"
+	"github.com/hashicorp/go-hclog"
 	"testing"
 	"time"
 
@@ -27,37 +28,54 @@ func TestDiscovery_ConnectedPopulatesRoutingTable(t *testing.T) {
 }
 
 func TestDiscovery_ProtocolFindPeers(t *testing.T) {
-	srv0 := CreateServer(t, nil)
-	srv1 := CreateServer(t, nil)
+	numServers := 2
+	srvs := make([]*Server, numServers)
+	for i := 0; i < numServers; i++ {
+		srv := CreateServer(t, nil)
+		srv.logger = hclog.New(&hclog.LoggerOptions{
+			Name:  fmt.Sprintf("protocol-find-peers-%d", i),
+			Level: hclog.LevelFromString("DEBUG"),
+		})
 
-	MultiJoin(t, srv0, srv1)
+		srvs[i] = srv
+	}
+
+	MultiJoin(t, srvs[0], srvs[1])
 	time.Sleep(1 * time.Second)
 
 	// find peers should not include our identity
-	resp, err := srv0.discovery.findPeersCall(srv1.AddrInfo().ID)
+	resp, err := srvs[0].discovery.findPeersCall(srvs[1].AddrInfo().ID)
 	assert.NoError(t, err)
 	assert.Empty(t, resp)
 }
 
 func TestDiscovery_PeerAdded(t *testing.T) {
-	srv0 := CreateServer(t, discoveryConfig)
-	srv1 := CreateServer(t, discoveryConfig)
-	srv2 := CreateServer(t, discoveryConfig)
+	numServers := 3
+	srvs := make([]*Server, numServers)
+	for i := 0; i < numServers; i++ {
+		srv := CreateServer(t, discoveryConfig)
+		srv.logger = hclog.New(&hclog.LoggerOptions{
+			Name:  fmt.Sprintf("discovery-peer-added-%d", i),
+			Level: hclog.LevelFromString("DEBUG"),
+		})
+
+		srvs[i] = srv
+	}
 
 	// server0 should connect to server2 by discovery
-	connectedCh := asyncWaitForEvent(srv0, 15*time.Second, connectedPeerHandler(srv2.AddrInfo().ID))
+	connectedCh := asyncWaitForEvent(srvs[0], 15*time.Second, connectedPeerHandler(srvs[2].AddrInfo().ID))
 
 	// serial join, srv0 -> srv1 -> srv2
 	MultiJoin(t,
-		srv0, srv1,
-		srv1, srv2,
+		srvs[0], srvs[1],
+		srvs[1], srvs[2],
 	)
 
 	// wait until server0 connects to server2
 	assert.True(t, <-connectedCh)
-	assert.Len(t, srv0.host.Peerstore().Peers(), 3)
-	assert.Len(t, srv1.host.Peerstore().Peers(), 3)
-	assert.Len(t, srv2.host.Peerstore().Peers(), 3)
+	assert.Len(t, srvs[0].host.Peerstore().Peers(), 3)
+	assert.Len(t, srvs[1].host.Peerstore().Peers(), 3)
+	assert.Len(t, srvs[2].host.Peerstore().Peers(), 3)
 
 	// TODO: We should put MaxPeers to 0 or 1 so that we do not
 	// mix data and we only test how the peers are being populated

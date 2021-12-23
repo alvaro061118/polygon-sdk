@@ -3,6 +3,8 @@ package network
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/hashicorp/go-hclog"
 	"testing"
 	"time"
 
@@ -30,29 +32,42 @@ func WaitForSubscribers(ctx context.Context, srv *Server, topic string, expected
 }
 
 func TestGossip(t *testing.T) {
-	srv0 := CreateServer(t, nil)
-	srv1 := CreateServer(t, nil)
+	numServers := 2
+	srvs := make([]*Server, numServers)
+	for i := 0; i < numServers; i++ {
+		srv := CreateServer(t, nil)
+		srv.logger = hclog.New(&hclog.LoggerOptions{
+			Name:  fmt.Sprintf("gossip-%d", i),
+			Level: hclog.LevelFromString("DEBUG"),
+		})
 
-	MultiJoin(t, srv0, srv1)
+		srvs[i] = srv
+	}
+
+	MultiJoin(t, srvs[0], srvs[1])
 
 	topicName := "topic/0.1"
 
-	topic0, err := srv0.NewTopic(topicName, &testproto.AReq{})
+	topic0, err := srvs[0].NewTopic(topicName, &testproto.AReq{})
 	assert.NoError(t, err)
 
-	topic1, err := srv1.NewTopic(topicName, &testproto.AReq{})
+	topic1, err := srvs[1].NewTopic(topicName, &testproto.AReq{})
 	assert.NoError(t, err)
 
 	// subscribe in topic1
 	msgCh := make(chan *testproto.AReq)
-	topic1.Subscribe(func(obj interface{}) {
+	if subscribeErr := topic1.Subscribe(func(obj interface{}) {
 		msgCh <- obj.(*testproto.AReq)
-	})
+	}); subscribeErr != nil {
+		t.Fatalf("Unable to subscribe to topic, %v", subscribeErr)
+	}
 
 	// wait until build mesh
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	WaitForSubscribers(ctx, srv0, topicName, 1)
+	if waitErr := WaitForSubscribers(ctx, srvs[0], topicName, 1); waitErr != nil {
+		t.Fatalf("Unable to wait for subscribers, %v", waitErr)
+	}
 
 	// publish in topic0
 	assert.NoError(t, topic0.Publish(&testproto.AReq{Msg: "a"}))
