@@ -287,12 +287,16 @@ func TestWatchSyncWithPeer(t *testing.T) {
 			assert.NotNil(t, peer)
 
 			latestBlock := newBlocks[len(newBlocks)-1]
+			startSyncTime := time.Now()
+			endSyncTime := startSyncTime.Add(time.Second * 5)
 			syncer.WatchSyncWithPeer(peer, func(b *types.Block) bool {
+				if time.Now().After(endSyncTime) {
+					// Timeout
+					return true
+				}
 				// sync until latest block
 				return b.Header.Number >= latestBlock.Header.Number
 			})
-			// wait until syncer updates status by latest block
-			WaitUntilProcessedAllEvents(t, syncer, 10*time.Second)
 
 			if tt.synced {
 				assert.True(t, tt.synced, "syncer shouldn't sync any block with peer, but did")
